@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""./build            render + rebuild the index
-   ./build "message"  ...then commit and push"""
+"""./build            build the site locally
+   ./build "message"  commit sources and push; CI builds and deploys"""
 import glob, html, re, subprocess, sys
 
 SECTIONS = ["Writing", "Notes", "Experiments"]
@@ -39,7 +39,7 @@ for label in SECTIONS:
         for d, t, h in entries)
     blocks.append(f"<h2>{label}</h2>\n{rows}")
 
-page = open("index.html").read()
+page = open("_index.html").read()
 page = re.sub(r"<!-- notes:start -->\n.*?<!-- notes:end -->",
               "<!-- notes:start -->\n" + "\n\n".join(blocks) + "\n<!-- notes:end -->",
               page, flags=re.S)

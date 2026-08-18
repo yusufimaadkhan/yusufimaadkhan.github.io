@@ -1,0 +1,8 @@
+.git
+.github
+.gitignore
+.deployignore
+.quarto
+/_*
+build
+README.md
