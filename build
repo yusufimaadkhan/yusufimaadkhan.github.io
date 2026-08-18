@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """./build            build the site locally
    ./build "message"  commit sources and push; CI builds and deploys"""
-import datetime, glob, html, os, re, subprocess, sys
+import glob, html, re, subprocess, sys
 
 SECTIONS = ["Writing", "Notes", "Experiments"]
 
@@ -9,36 +9,13 @@ def field(src, name):
     m = re.search(rf'^{name}:\s*["\']?(.*?)["\']?\s*$', src, re.M)
     return m.group(1).strip() if m else ""
 
-def title_from(path):
-    t = os.path.basename(path)[:-3].replace("-", " ").replace("_", " ").strip()
-    return t[:1].upper() + t[1:]
-
-def date_from(path):
-    r = subprocess.run(["git", "log", "--diff-filter=A", "--format=%ad",
-                        "--date=short", "--", path], capture_output=True, text=True)
-    added = [l for l in r.stdout.split("\n") if l.strip()]
-    return added[-1] if added else datetime.date.today().isoformat()
-
-def normalise(folder):
-    """a file written without front matter gets one, derived from its name"""
-    for md in glob.glob(f"{folder}/*.md"):
-        src = open(md).read()
-        if src.lstrip().startswith("---"):
-            continue
-        head = f'---\ntitle: "{title_from(md)}"\ndate: "{date_from(md)}"\n---\n\n'
-        open(md, "w").write(head + src.lstrip())
-        print(f"front matter added: {md}")
-
-for f in ("writing", "notes"):
-    normalise(f)
-
 subprocess.run(["quarto", "render"], check=True)
 
 def markdown_entries(folder):
     for md in glob.glob(f"{folder}/*.md"):
         src = open(md).read()
-        yield (field(src, "date") or date_from(md),
-               field(src, "title") or title_from(md),
+        yield (field(src, "date"),
+               field(src, "title") or md,
                field(src, "link") or f"{md[:-3]}.html")
 
 def built_entries(folder):
@@ -46,7 +23,7 @@ def built_entries(folder):
         src = open(page).read()
         t = re.search(r"<title>(.*?)</title>", src, re.S)
         d = re.search(r"<!--\s*date:\s*(.*?)\s*-->", src)
-        yield (d.group(1) if d else date_from(page),
+        yield (d.group(1) if d else "",
                html.unescape(t.group(1).strip()) if t else page,
                page.rsplit("/", 1)[0] + "/")
 
