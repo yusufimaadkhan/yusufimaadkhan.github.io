@@ -12,11 +12,12 @@ def field(src, name):
 subprocess.run(["quarto", "render"], check=True)
 
 def markdown_entries(folder):
-    for md in glob.glob(f"{folder}/*.md"):
+    for md in glob.glob(f"{folder}/*.md") + glob.glob(f"{folder}/*.qmd"):
         src = open(md).read()
+        stem = md.rsplit(".", 1)[0]
         yield (field(src, "date"),
                field(src, "title") or md,
-               field(src, "link") or f"{md[:-3]}.html")
+               field(src, "link") or f"{stem}.html")
 
 def built_entries(folder):
     for page in glob.glob(f"{folder}/*/index.html"):
