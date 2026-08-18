@@ -1,0 +1,11 @@
+project:
+  type: default
+  output-dir: .
+format:
+  html:
+    minimal: true
+    theme: none
+    css: custom.css
+    include-before-body: _back.html
+    toc: false
+    anchor-sections: false

@@ -1,0 +1,46 @@
+/* Typography mainly */
+body {
+  --u: 1.5rem;              /* 24px, the LRB gap */
+  max-width: 37em;          /* the LRB column, ~700px */
+  margin: 0 auto;
+  padding: calc(var(--u) * 2) 1.5rem calc(var(--u) * 4);
+  font: 1.19rem/1.46 Charter, Georgia, serif;   /* ~19px */
+  color: #494746;
+  overflow-wrap: break-word;
+}
+
+/* landing page: unchanged, still mono */
+body.index { max-width: 62ch; font: 1rem/1.7 monospace; --u: 1.7rem; }
+
+/* chrome + code are monospaced */
+h1, h2, h3, h4, h5, h6, #home, pre, code, th, td { font-family: monospace; }
+
+h1, h2, h3, h4, h5, h6 { font-weight: 400; color: #2f2d2c; }
+h1 { font-size: 1.2em; margin: 0 0 calc(var(--u) * 2); }
+h2 { font-size: 1.05em; margin: calc(var(--u) * 2) 0 var(--u); }
+h3 { font-size: 0.95em; margin: calc(var(--u) * 2) 0 var(--u); }
+#title-block-header { margin: 0 0 calc(var(--u) * 2); }
+#title-block-header h1 { margin: 0; }
+body.index h1 { font-size: 1em; }
+body.index h2 { font-size: 1em; margin: calc(var(--u) * 2) 0 var(--u); }
+body.index .d { display: inline-block; width: 12ch; }
+
+#home { font-size: 1.25em; margin: 0 0 calc(var(--u) * 2); }
+#home a { text-decoration: none; }
+
+p { margin: 0 0 var(--u); }
+hr { margin: calc(var(--u) * 2) 0 var(--u); }
+ol, ul { padding-left: 3ch; }
+li p { margin: 0 0 calc(var(--u) / 2); }
+a { color: inherit; }
+.footnote-ref, .footnote-back { text-decoration: none; }
+
+pre { margin: var(--u) 0; padding-left: 3ch; overflow-x: auto; font-size: 0.9em; }
+code { font-size: 0.9em; }
+blockquote { margin: var(--u) 0; padding-left: 3ch; }
+
+table { border-collapse: collapse; margin: var(--u) 0; font-size: 0.9em; }
+th, td { padding: 0 3ch 0 0; text-align: left; vertical-align: top; }
+th { font-weight: 400; }
+
+img { max-width: 100%; height: auto; }

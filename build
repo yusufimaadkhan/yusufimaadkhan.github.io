@@ -1,0 +1,54 @@
+#!/usr/bin/env python3
+"""./build            render + rebuild the index
+   ./build "message"  ...then commit and push"""
+import glob, html, re, subprocess, sys
+
+SECTIONS = ["Writing", "Notes", "Experiments"]
+
+def field(src, name):
+    m = re.search(rf'^{name}:\s*["\']?(.*?)["\']?\s*$', src, re.M)
+    return m.group(1).strip() if m else ""
+
+subprocess.run(["quarto", "render"], check=True)
+
+def markdown_entries(folder):
+    for md in glob.glob(f"{folder}/*.md"):
+        src = open(md).read()
+        yield (field(src, "date"),
+               field(src, "title") or md,
+               field(src, "link") or f"{md[:-3]}.html")
+
+def built_entries(folder):
+    for page in glob.glob(f"{folder}/*/index.html"):
+        src = open(page).read()
+        t = re.search(r"<title>(.*?)</title>", src, re.S)
+        d = re.search(r"<!--\s*date:\s*(.*?)\s*-->", src)
+        yield (d.group(1) if d else "",
+               html.unescape(t.group(1).strip()) if t else page,
+               page.rsplit("/", 1)[0] + "/")
+
+blocks = []
+for label in SECTIONS:
+    folder = label.lower()
+    entries = list(built_entries(folder) if label == "Experiments"
+                   else markdown_entries(folder))
+    entries.sort(reverse=True)
+    rows = "\n".join(
+        f'<p><span class="d">{html.escape(d)}</span>'
+        f'<a href="{h}">{html.escape(t)}</a></p>'
+        for d, t, h in entries)
+    blocks.append(f"<h2>{label}</h2>\n{rows}")
+
+page = open("index.html").read()
+page = re.sub(r"<!-- notes:start -->\n.*?<!-- notes:end -->",
+              "<!-- notes:start -->\n" + "\n\n".join(blocks) + "\n<!-- notes:end -->",
+              page, flags=re.S)
+open("index.html", "w").write(page)
+print(f"index.html: {sum(b.count('<p>') for b in blocks)} entries")
+
+if len(sys.argv) > 1:
+    subprocess.run(["git", "add", "-A"], check=True)
+    if subprocess.run(["git", "diff", "--cached", "--quiet"]).returncode == 0:
+        sys.exit("nothing to commit")
+    subprocess.run(["git", "commit", "-m", sys.argv[1]], check=True)
+    subprocess.run(["git", "push"], check=True)
