@@ -3,6 +3,8 @@
 .DS_Store
 _instructions.md
 _typography-test.md
+/preview
+/_drafts/
 /index.html
 /notes/*.html
 /writing/*.html

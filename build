@@ -48,7 +48,11 @@ open("index.html", "w").write(page)
 print(f"index.html: {sum(b.count('<p>') for b in blocks)} entries")
 
 if len(sys.argv) > 1:
-    subprocess.run(["git", "add", "-A"], check=True)
+    subprocess.run(["git", "add", "--",
+                    "writing", "notes", "experiments",
+                    "custom.css", "_index.html", "_back.html", "_quarto.yml",
+                    "build", ".github", ".gitignore", ".deployignore",
+                    "README.md"], check=True)
     if subprocess.run(["git", "diff", "--cached", "--quiet"]).returncode == 0:
         sys.exit("nothing to commit")
     subprocess.run(["git", "commit", "-m", sys.argv[1]], check=True)
