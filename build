@@ -47,7 +47,7 @@ def card(page, title, left, right=""):
     lines.append(line)
     if len(lines) > 3:
         lines = lines[:3]; lines[-1] = lines[-1][:-1] + "\u2026"
-    y = M
+    y = M + 40                                         # title sits a touch lower
     for l in lines:
         d.text(((W - d.textlength(l, font=big)) / 2, y), l, font=big, fill="#2f2d2c"); y += 80
     if os.path.exists("_card-bg.png"):                 # tessellated Peirce graticule,
