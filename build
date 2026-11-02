@@ -45,12 +45,20 @@ def card(page, title, footer):
         else:
             line = trial
     lines.append(line)
-    if len(lines) > 4:
-        lines = lines[:4]; lines[-1] = lines[-1][:-1] + "\u2026"
+    if len(lines) > 3:
+        lines = lines[:3]; lines[-1] = lines[-1][:-1] + "\u2026"
     y = M
     for l in lines:
         d.text((M, y), l, font=big, fill="#2f2d2c"); y += 80
-    d.text((M, H - M - 30), footer, font=small, fill="#494746")
+    if os.path.exists("_card-bg.png"):                 # tessellated Peirce graticule,
+        bg = Image.open("_card-bg.png").convert("RGB")  # faded out at title and footer
+        top, bot, ramp = y, H - M - 10, 150
+        mask = Image.new("L", (1, H))
+        ease = lambda t: t * t * (3 - 2 * t)             # smoothstep
+        mask.putdata([int(255 * ease(max(0, min(1, (r - top) / ramp, (bot - r) / ramp))))
+                      for r in range(H)])
+        im.paste(bg, (0, 0), mask.resize((W, H)))
+    d.text((M, H - M - 10), footer, font=small, fill="#494746")
     os.makedirs("cards", exist_ok=True)
     out = "cards/" + page.removesuffix(".html").replace("/", "-") + ".png"
     im.save(out)
@@ -90,7 +98,7 @@ def markdown_entries(folder):
         if not field(src, "description"):
             print(f"no description: {md}")
         add_preview(f"{stem}.html", field(src, "title") or md, blurb(src),
-                    f"{SITE_NAME}  \u00b7  {field(src, 'date')}")
+                    f"{SITE_NAME}    {field(src, 'date')}")
         yield (field(src, "date"),
                field(src, "title") or md,
                field(src, "link") or f"{stem}.html")
@@ -127,7 +135,7 @@ print(f"index.html: {sum(b.count('<p>') for b in blocks)} entries")
 if len(sys.argv) > 1:
     subprocess.run(["git", "add", "--",
                     "writing", "notes", "experiments",
-                    "custom.css", "_index.html", "_back.html", "_quarto.yml",
+                    "custom.css", "_index.html", "_back.html", "_quarto.yml", "_card-bg.png",
                     "build", ".github", ".gitignore", ".deployignore",
                     "README.md"], check=True)
     if subprocess.run(["git", "diff", "--cached", "--quiet"]).returncode == 0:
