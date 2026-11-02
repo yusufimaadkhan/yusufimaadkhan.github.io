@@ -67,10 +67,11 @@ def add_preview(page, title, description, footer, kind="article"):
         f'<meta property="og:type" content="{kind}">',
         f'<meta property="og:site_name" content="{e(SITE_NAME)}">',
         f'<meta property="og:title" content="{e(title)}">',
-        f'<meta property="og:description" content="{e(description)}">',
         f'<meta property="og:url" content="{url}">',
-        f'<meta name="description" content="{e(description)}">',
     ]
+    if description:
+        tags += [f'<meta property="og:description" content="{e(description)}">',
+                 f'<meta name="description" content="{e(description)}">']
     if img := card(page, title, footer):
         tags += [f'<meta property="og:image" content="{SITE}/{img}">',
                  '<meta property="og:image:width" content="1200">',
@@ -120,8 +121,7 @@ page = re.sub(r"<!-- notes:start -->\n.*?<!-- notes:end -->",
               "<!-- notes:start -->\n" + "\n\n".join(blocks) + "\n<!-- notes:end -->",
               page, flags=re.S)
 open("index.html", "w").write(page)
-add_preview("index.html", SITE_NAME, "Writing, notes, and experiments by Yusuf Imaad Khan.",
-            "yusufimaadkhan.github.io", "website")
+add_preview("index.html", SITE_NAME, "", "yusufimaadkhan.github.io", "website")
 print(f"index.html: {sum(b.count('<p>') for b in blocks)} entries")
 
 if len(sys.argv) > 1:
