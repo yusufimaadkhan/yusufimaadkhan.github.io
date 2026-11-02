@@ -2,6 +2,8 @@
 """./build            build the site locally
    ./build "message"  commit sources and push; CI builds and deploys"""
 import glob, html, os, re, subprocess, sys
+from datetime import datetime, timezone
+from email.utils import format_datetime
 
 SECTIONS = ["Writing", "Notes", "Experiments"]
 SITE = "https://yusufimaadkhan.github.io"
@@ -79,6 +81,7 @@ def add_preview(page, title, description, left, right="", kind="article"):
         f'<meta property="og:site_name" content="{e(SITE_NAME)}">',
         f'<meta property="og:title" content="{e(title)}">',
         f'<meta property="og:url" content="{url}">',
+        f'<link rel="alternate" type="application/rss+xml" title="{e(SITE_NAME)}" href="{SITE}/feed.xml">',
     ]
     if description:
         tags += [f'<meta property="og:description" content="{e(description)}">',
@@ -104,7 +107,18 @@ def markdown_entries(folder):
                     SITE_NAME, field(src, "date"))
         yield (field(src, "date"),
                field(src, "title") or md,
-               field(src, "link") or f"{stem}.html")
+               field(src, "link") or f"{stem}.html",
+               blurb(src),
+               article(f"{stem}.html"))
+
+def article(page):
+    """the rendered body after the title block, with links made absolute"""
+    src = open(page).read()
+    m = re.search(r"</header>(.*?)</body>", src, re.S) or re.search(r"</p>(.*?)</body>", src, re.S)
+    body = m.group(1).strip() if m else ""
+    base = SITE + "/" + page.rsplit("/", 1)[0] + "/"
+    body = re.sub(r'((?:href|src)=")(?=#)', r"\1" + SITE + "/" + page, body)   # footnotes
+    return re.sub(r'((?:href|src)=")(?!https?:|mailto:|/)', r"\1" + base, body)
 
 def built_entries(folder):
     for page in glob.glob(f"{folder}/*/index.html"):
@@ -113,9 +127,10 @@ def built_entries(folder):
         d = re.search(r"<!--\s*date:\s*(.*?)\s*-->", src)
         yield (d.group(1) if d else "",
                html.unescape(t.group(1).strip()) if t else page,
-               page.rsplit("/", 1)[0] + "/")
+               page.rsplit("/", 1)[0] + "/",
+               "", "")
 
-blocks = []
+blocks, feed = [], []
 for label in SECTIONS:
     folder = label.lower()
     entries = list(built_entries(folder) if label == "Experiments"
@@ -124,8 +139,9 @@ for label in SECTIONS:
     rows = "\n".join(
         f'<p><span class="d">{html.escape(d)}</span>'
         f'<a href="{h}">{html.escape(t)}</a></p>'
-        for d, t, h in entries)
+        for d, t, h, *_ in entries)
     blocks.append(f"<h2>{label}</h2>\n{rows}")
+    feed += entries
 
 page = open("_index.html").read()
 page = re.sub(r"<!-- notes:start -->\n.*?<!-- notes:end -->",
@@ -134,6 +150,37 @@ page = re.sub(r"<!-- notes:start -->\n.*?<!-- notes:end -->",
 open("index.html", "w").write(page)
 add_preview("index.html", SITE_NAME, "", "yusufimaadkhan.github.io", kind="website")
 print(f"index.html: {sum(b.count('<p>') for b in blocks)} entries")
+
+def rfc822(d):
+    try:
+        return format_datetime(datetime.strptime(d, "%Y-%m-%d").replace(tzinfo=timezone.utc))
+    except ValueError:
+        return ""
+
+def item(d, t, h, desc, body):
+    url = h if h.startswith("http") else SITE + "/" + h
+    e = html.escape
+    out = [f"<item>", f"<title>{e(t)}</title>", f"<link>{e(url)}</link>",
+           f'<guid isPermaLink="true">{e(url)}</guid>']
+    if pub := rfc822(d):
+        out.append(f"<pubDate>{pub}</pubDate>")
+    if desc:
+        out.append(f"<description>{e(desc)}</description>")
+    if body:
+        out.append("<content:encoded><![CDATA[" + body.replace("]]>", "]]]]><![CDATA[>") + "]]></content:encoded>")
+    return "\n".join(out) + "\n</item>"
+
+feed.sort(reverse=True)
+open("feed.xml", "w").write(f"""<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+<channel>
+<title>{html.escape(SITE_NAME)}</title>
+<link>{SITE}/</link>
+<description>{html.escape(SITE_NAME)}</description>
+<atom:link href="{SITE}/feed.xml" rel="self" type="application/rss+xml"/>
+<lastBuildDate>{format_datetime(datetime.now(timezone.utc))}</lastBuildDate>
+""" + "\n".join(item(*x) for x in feed) + "\n</channel>\n</rss>\n")
+print(f"feed.xml: {len(feed)} items")
 
 if len(sys.argv) > 1:
     subprocess.run(["git", "add", "--",

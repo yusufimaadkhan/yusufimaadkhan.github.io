@@ -25,6 +25,9 @@ h3 { font-size: 0.95em; margin: calc(var(--u) * 2) 0 var(--u); }
 body.index h1 { font-size: 1em; }
 body.index h2 { font-size: 1em; margin: calc(var(--u) * 2) 0 var(--u); }
 body.index .d { display: inline-block; width: 12ch; }
+body.index { position: relative; }
+#feed { position: absolute; top: calc(var(--u) * 2 + 0.3em); right: 1.5rem; line-height: 1; }
+#feed svg { width: 1.1em; height: 1.1em; display: block; }
 
 #home { font-size: 1.25em; margin: 0 0 calc(var(--u) * 2); }
 #home a { text-decoration: none; }
