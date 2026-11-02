@@ -69,8 +69,25 @@ def card(page, title, left, right=""):
     im.save(out)
     return out
 
-def add_preview(page, title, description, left, right="", kind="article"):
-    """insert Open Graph / Twitter card tags so links unfurl on social media"""
+def post_image(md, src):
+    """front-matter image:, else the first ![...](...) in the body; local files
+    are resolved relative to the post and must exist; image: none keeps the drawn card"""
+    m = re.search(r"!\[[^\]]*\]\(\s*<?([^\s)>]+)", src)
+    path = field(src, "image") or (m.group(1) if m else "")
+    if not path or path.lower() in ("none", "no", "false") or path.startswith("data:"):
+        return None
+    if re.match(r"https?://", path):
+        return path, None
+    local = path.lstrip("/") if path.startswith("/") else os.path.join(os.path.dirname(md), path)
+    local = os.path.normpath(local)
+    if not os.path.isfile(local):
+        print(f"image not found: {md} -> {path}")
+        return None
+    return SITE + "/" + local.replace(os.sep, "/"), local
+
+def add_preview(page, title, description, left, right="", kind="article", image=None):
+    """insert Open Graph / Twitter card tags so links unfurl on social media;
+    image is (url, local path or None) to use instead of the drawn title card"""
     src = open(page).read()
     if 'property="og:title"' in src:
         return
@@ -86,7 +103,19 @@ def add_preview(page, title, description, left, right="", kind="article"):
     if description:
         tags += [f'<meta property="og:description" content="{e(description)}">',
                  f'<meta name="description" content="{e(description)}">']
-    if img := card(page, title, left, right):
+    if image:
+        url, local = image
+        tags += [f'<meta property="og:image" content="{e(url)}">']
+        if local:
+            try:
+                from PIL import Image
+                w, h = Image.open(local).size
+                tags += [f'<meta property="og:image:width" content="{w}">',
+                         f'<meta property="og:image:height" content="{h}">']
+            except Exception:
+                pass
+        tags += ['<meta name="twitter:card" content="summary_large_image">']
+    elif img := card(page, title, left, right):
         tags += [f'<meta property="og:image" content="{SITE}/{img}">',
                  '<meta property="og:image:width" content="1200">',
                  '<meta property="og:image:height" content="630">',
@@ -104,7 +133,7 @@ def markdown_entries(folder):
         if not field(src, "description"):
             print(f"no description: {md}")
         add_preview(f"{stem}.html", field(src, "title") or md, blurb(src),
-                    SITE_NAME, field(src, "date"))
+                    SITE_NAME, field(src, "date"), image=post_image(md, src))
         yield (field(src, "date"),
                field(src, "title") or md,
                field(src, "link") or f"{stem}.html",
