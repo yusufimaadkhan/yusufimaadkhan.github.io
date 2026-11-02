@@ -13,7 +13,7 @@ body {
 body.index { max-width: 62ch; font: 1rem/1.7 monospace; --u: 1.7rem; }
 
 /* chrome + code are monospaced */
-h1, h2, h3, h4, h5, h6, #home, pre, code, th, td { font-family: monospace; }
+h1, h2, h3, h4, h5, h6, #home, pre, code, th, td, .date { font-family: monospace; }
 
 h1, h2, h3, h4, h5, h6 { font-weight: 400; color: #2f2d2c; }
 h1 { font-size: 1.2em; margin: 0 0 calc(var(--u) * 2); }
@@ -21,6 +21,7 @@ h2 { font-size: 1.05em; margin: calc(var(--u) * 2) 0 var(--u); }
 h3 { font-size: 0.95em; margin: calc(var(--u) * 2) 0 var(--u); }
 #title-block-header { margin: 0 0 calc(var(--u) * 2); }
 #title-block-header h1 { margin: 0; }
+#title-block-header .date { margin: 0; font-size: 1.2em; }
 body.index h1 { font-size: 1em; }
 body.index h2 { font-size: 1em; margin: calc(var(--u) * 2) 0 var(--u); }
 body.index .d { display: inline-block; width: 12ch; }
