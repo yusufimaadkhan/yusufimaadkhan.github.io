@@ -4,6 +4,8 @@
 import glob, html, re, subprocess, sys
 
 SECTIONS = ["Writing", "Notes", "Experiments"]
+SITE = "https://yusufimaadkhan.github.io"
+SITE_NAME = "Unnecessary & Insufficient"
 
 def field(src, name):
     m = re.search(rf'^{name}:\s*["\']?(.*?)["\']?\s*$', src, re.M)
@@ -11,10 +13,42 @@ def field(src, name):
 
 subprocess.run(["quarto", "render"], check=True)
 
+def blurb(src):
+    """front-matter description, else the first paragraph of the body"""
+    if d := field(src, "description"):
+        return d
+    body = re.sub(r"^---\n.*?\n---\n", "", src, count=1, flags=re.S)
+    for para in re.split(r"\n\s*\n", body):
+        text = re.sub(r"\[\^[^\]]*\]|[*_`#>]|\[([^\]]*)\]\([^)]*\)", r"\1", para)
+        text = " ".join(text.split())
+        if text and not text.startswith("[^"):
+            return text[:197] + "..." if len(text) > 200 else text
+    return SITE_NAME
+
+def add_preview(page, title, description, kind="article"):
+    """insert Open Graph / Twitter card tags so links unfurl on social media"""
+    src = open(page).read()
+    if 'property="og:title"' in src:
+        return
+    e = html.escape
+    url = SITE + "/" + page.removesuffix("index.html")
+    tags = "\n".join([
+        f'<meta property="og:type" content="{kind}">',
+        f'<meta property="og:site_name" content="{e(SITE_NAME)}">',
+        f'<meta property="og:title" content="{e(title)}">',
+        f'<meta property="og:description" content="{e(description)}">',
+        f'<meta property="og:url" content="{url}">',
+        f'<meta name="description" content="{e(description)}">',
+        f'<meta name="twitter:card" content="summary">',
+    ])
+    src = src.replace("</title>", "</title>\n" + tags, 1)
+    open(page, "w").write(src)
+
 def markdown_entries(folder):
     for md in glob.glob(f"{folder}/*.md") + glob.glob(f"{folder}/*.qmd"):
         src = open(md).read()
         stem = md.rsplit(".", 1)[0]
+        add_preview(f"{stem}.html", field(src, "title") or md, blurb(src))
         yield (field(src, "date"),
                field(src, "title") or md,
                field(src, "link") or f"{stem}.html")
@@ -45,6 +79,7 @@ page = re.sub(r"<!-- notes:start -->\n.*?<!-- notes:end -->",
               "<!-- notes:start -->\n" + "\n\n".join(blocks) + "\n<!-- notes:end -->",
               page, flags=re.S)
 open("index.html", "w").write(page)
+add_preview("index.html", SITE_NAME, "Writing, notes, and experiments by Yusuf Imaad Khan.", "website")
 print(f"index.html: {sum(b.count('<p>') for b in blocks)} entries")
 
 if len(sys.argv) > 1:
