@@ -27,8 +27,8 @@ def blurb(src):
             return text[:197] + "..." if len(text) > 200 else text
     return SITE_NAME
 
-def card(page, title, footer):
-    """draw a 1200x630 preview image: title in mono, site name and date below"""
+def card(page, title, left, right=""):
+    """draw a 1200x630 preview image: centred title, footer text flush left/right"""
     from PIL import Image, ImageDraw, ImageFont
     font = next((f for f in FONTS if os.path.exists(f)), None)
     if not font:
@@ -49,22 +49,25 @@ def card(page, title, footer):
         lines = lines[:3]; lines[-1] = lines[-1][:-1] + "\u2026"
     y = M
     for l in lines:
-        d.text((M, y), l, font=big, fill="#2f2d2c"); y += 80
+        d.text(((W - d.textlength(l, font=big)) / 2, y), l, font=big, fill="#2f2d2c"); y += 80
     if os.path.exists("_card-bg.png"):                 # tessellated Peirce graticule,
         bg = Image.open("_card-bg.png").convert("RGB")  # faded out at title and footer
         top, bot, ramp = y, H - M - 10, 150
-        mask = Image.new("L", (1, H))
+        mid = (top + bot) / 2                           # shift so a mirror line of the
+        off = mid - 75 * -(-mid // 75)                  # pattern (every 75px) sits at mid
         ease = lambda t: t * t * (3 - 2 * t)             # smoothstep
-        mask.putdata([int(255 * ease(max(0, min(1, (r - top) / ramp, (bot - r) / ramp))))
-                      for r in range(H)])
-        im.paste(bg, (0, 0), mask.resize((W, H)))
-    d.text((M, H - M - 10), footer, font=small, fill="#494746")
+        mask = Image.new("L", (1, bg.height))
+        mask.putdata([int(255 * ease(max(0, min(1, (k + off - top) / ramp, (bot - k - off) / ramp))))
+                      for k in range(bg.height)])
+        im.paste(bg, (0, round(off)), mask.resize((W, bg.height)))
+    d.text((M, H - M - 10), left, font=small, fill="#494746")
+    d.text((W - M - d.textlength(right, font=small), H - M - 10), right, font=small, fill="#494746")
     os.makedirs("cards", exist_ok=True)
     out = "cards/" + page.removesuffix(".html").replace("/", "-") + ".png"
     im.save(out)
     return out
 
-def add_preview(page, title, description, footer, kind="article"):
+def add_preview(page, title, description, left, right="", kind="article"):
     """insert Open Graph / Twitter card tags so links unfurl on social media"""
     src = open(page).read()
     if 'property="og:title"' in src:
@@ -80,7 +83,7 @@ def add_preview(page, title, description, footer, kind="article"):
     if description:
         tags += [f'<meta property="og:description" content="{e(description)}">',
                  f'<meta name="description" content="{e(description)}">']
-    if img := card(page, title, footer):
+    if img := card(page, title, left, right):
         tags += [f'<meta property="og:image" content="{SITE}/{img}">',
                  '<meta property="og:image:width" content="1200">',
                  '<meta property="og:image:height" content="630">',
@@ -98,7 +101,7 @@ def markdown_entries(folder):
         if not field(src, "description"):
             print(f"no description: {md}")
         add_preview(f"{stem}.html", field(src, "title") or md, blurb(src),
-                    f"{SITE_NAME}    {field(src, 'date')}")
+                    SITE_NAME, field(src, "date"))
         yield (field(src, "date"),
                field(src, "title") or md,
                field(src, "link") or f"{stem}.html")
@@ -129,7 +132,7 @@ page = re.sub(r"<!-- notes:start -->\n.*?<!-- notes:end -->",
               "<!-- notes:start -->\n" + "\n\n".join(blocks) + "\n<!-- notes:end -->",
               page, flags=re.S)
 open("index.html", "w").write(page)
-add_preview("index.html", SITE_NAME, "", "yusufimaadkhan.github.io", "website")
+add_preview("index.html", SITE_NAME, "", "yusufimaadkhan.github.io", kind="website")
 print(f"index.html: {sum(b.count('<p>') for b in blocks)} entries")
 
 if len(sys.argv) > 1:
