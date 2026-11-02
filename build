@@ -35,7 +35,7 @@ def card(page, title, left, right=""):
         return None
     big, small = ImageFont.truetype(font, 64), ImageFont.truetype(font, 30)
     W, H, M = 1200, 630, 90
-    im = Image.new("RGB", (W, H), "#fbfaf7")
+    im = Image.new("RGB", (W, H), "#ffffff")
     d = ImageDraw.Draw(im)
     lines, line = [], ""
     for word in title.split():                       # wrap to the column
